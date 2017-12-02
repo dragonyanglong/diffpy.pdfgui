@@ -133,6 +133,7 @@ class Calculation(PDFComponent):
             gui.postEvent(gui.PLOTNOW, self)
         return
 
+
     def calculate(self):
         """do the real calculation
         """
@@ -149,6 +150,30 @@ class Calculation(PDFComponent):
         from diffpy.pdffit2 import PdfFit
         server = PdfFit()
 
+        ##long
+        from diffpy.Structure import loadStructure
+        from diffpy.srreal.pdfcalculator import PDFCalculator
+        print "self.owner.strucs"
+        print self.owner.strucs
+        ni_stru = loadStructure('/Users/Dragon/Documents/Billinge/Ni.stru')
+        # print ni_stru
+        pc = PDFCalculator()
+        pc.qmax = self.qmax
+        pc.qdamp = self.qdamp
+        pc.qbroad = self.qbroad
+        pc.rmin = self.rmin
+        pc.rmax = self.rmax
+        pc.rstep = self.rstep
+        pc.scale = 1.0  ## always set dscale as 1.0 for now.
+        ### temp: use dscale as Qmin. 
+        pc.qmin = self.dscale
+
+        r1, g1 =pc(ni_stru)
+        print pc.qmax, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale,pc.qmin
+        ##long
+
+
+
         # structure needs to be read before dataset allocation
         for struc in self.owner.strucs:
             server.read_struct_string(struc.writeStr('pdffit'))
@@ -156,6 +181,8 @@ class Calculation(PDFComponent):
                 server.constrain(key.encode('ascii'), var.formula.encode('ascii'))
 
         # set up dataset
+        #rlen is the bin: bin     -- number of data points in calculation
+        # dscale is the data scale factor
         server.alloc(self.stype, self.qmax, self.qdamp,
                 self.rmin, self.rmax, self.rlen)
         server.setvar('qbroad', self.qbroad)
@@ -182,8 +209,66 @@ class Calculation(PDFComponent):
         server.calc()
 
         # get results
-        self.rcalc = server.getR()
-        self.Gcalc = server.getpdf_fit()
+        #long
+        self.rcalc = r1.tolist()
+        self.Gcalc = g1.tolist()
+        #long
+
+
+
+
+    # def calculate(self):
+    #     """do the real calculation
+    #     """
+    #     # clean up old results
+    #     self.rcalc = []
+    #     self.Gcalc = []
+
+    #     # do the job
+    #     if len(self.owner.strucs) == 0:
+    #         raise ControlConfigError("No structure is given for calculation")
+
+    #     # make sure parameters are initialized
+    #     self.owner.updateParameters()
+    #     from diffpy.pdffit2 import PdfFit
+    #     server = PdfFit()
+
+
+    #     # structure needs to be read before dataset allocation
+    #     for struc in self.owner.strucs:
+    #         server.read_struct_string(struc.writeStr('pdffit'))
+    #         for key,var in struc.constraints.items():
+    #             server.constrain(key.encode('ascii'), var.formula.encode('ascii'))
+
+    #     # set up dataset
+    #     server.alloc(self.stype, self.qmax, self.qdamp,
+    #             self.rmin, self.rmax, self.rlen)
+    #     server.setvar('qbroad', self.qbroad)
+    #     server.setvar('dscale', self.dscale)
+
+    #     # phase related variables
+    #     # pair selection applies to current dataset,
+    #     # therefore it has to be done after alloc
+    #     for phaseidx0, struc in enumerate(self.owner.strucs):
+    #         phaseidx1 = phaseidx0 + 1
+    #         server.setphase(phaseidx1)
+    #         server.setvar('pscale', struc.getvar('pscale'))
+    #         server.setvar('spdiameter', struc.getvar('spdiameter'))
+    #         struc.applyPairSelection(server, phaseidx1)
+
+    #     # set up parameters
+    #     for index, par in self.owner.parameters.items():
+    #         server.setpar(index, par.initialValue()) # info[0] = init value
+    #         # fix if fixed.  Note: all parameters are free after server.reset().
+    #         if par.fixed:
+    #             server.fixpar(index)
+
+    #     # all ready here
+    #     server.calc()
+
+    #     # get results
+    #     self.rcalc = server.getR()
+    #     self.Gcalc = server.getpdf_fit()
 
     def write(self, filename):
         """write this calculated PDF to a file
