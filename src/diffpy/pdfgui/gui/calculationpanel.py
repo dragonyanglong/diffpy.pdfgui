@@ -39,8 +39,8 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.textCtrlScaleFactor = wx.TextCtrl(self, wx.ID_ANY, "1.0")
         self.labelQmax = wx.StaticText(self, wx.ID_ANY, "Qmax", style=wx.ALIGN_RIGHT)
         self.textCtrlQmax = wx.TextCtrl(self, wx.ID_ANY, "25.0")
-        self.label_1 = wx.StaticText(self, wx.ID_ANY, "")
-        self.label_1_copy = wx.StaticText(self, wx.ID_ANY, "")
+        self.labelQmin = wx.StaticText(self, wx.ID_ANY, "Qmin", style=wx.ALIGN_RIGHT)
+        self.textCtrlQmin = wx.TextCtrl(self, wx.ID_ANY, "0.0")
         self.labelQdamp = wx.StaticText(self, wx.ID_ANY, "Qdamp", style=wx.ALIGN_RIGHT)
         self.textCtrlQdamp = wx.TextCtrl(self, wx.ID_ANY, "0.0")
         self.labelQbroad = wx.StaticText(self, wx.ID_ANY, "Qbroad", style=wx.ALIGN_RIGHT)
@@ -86,8 +86,8 @@ class CalculationPanel(wx.Panel, PDFPanel):
         grid_sizer_1.Add(self.textCtrlScaleFactor, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQmax, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 20)
         grid_sizer_1.Add(self.textCtrlQmax, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        grid_sizer_1.Add(self.label_1, 0, 0, 0)
-        grid_sizer_1.Add(self.label_1_copy, 0, 0, 0)
+        grid_sizer_1.Add(self.labelQmin, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 20)
+        grid_sizer_1.Add(self.textCtrlQmin, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQdamp, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
         grid_sizer_1.Add(self.textCtrlQdamp, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQbroad, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
@@ -116,6 +116,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.ctrlMap = {'rmin'       :   'textCtrlCalcFrom',
                         'rmax'       :   'textCtrlCalcTo',
                         'qmax'       :   'textCtrlQmax',
+                        'qmin'       :   'textCtrlQmin',
                         'qdamp'      :   'textCtrlQdamp',
                         'qbroad'     :   'textCtrlQbroad',
                         'rstep'      :   'textCtrlRStep',
@@ -133,6 +134,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.textCtrlCalcFrom.Bind(wx.EVT_KILL_FOCUS, self.onCalcRange)
         self.textCtrlCalcTo.Bind(wx.EVT_KILL_FOCUS, self.onCalcRange)
         self.textCtrlQmax.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
+        self.textCtrlQmin.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
         self.textCtrlQdamp.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
         self.textCtrlQbroad.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
         self.textCtrlScaleFactor.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)

@@ -40,6 +40,7 @@ class Calculation(PDFComponent):
     stype  -- scattering type, 'X' or 'N'
     qmax   -- maximum value of Q in inverse Angstroms.  Termination ripples
               are ignored for qmax=0.
+    qmin   -- minimum value of Q in inverse Angstroms.  Default qmin=0.
     qdamp  -- specifies width of Gaussian damping factor in pdf_obs due
               to imperfect Q resolution
     qbroad -- quadratic peak broadening factor related to dataset
@@ -64,6 +65,7 @@ class Calculation(PDFComponent):
         self.stype = 'X'
         # user must specify qmax to get termination ripples
         self.qmax = 0.0
+        self.qmin = 0.0
         self.qdamp = 0.001
         self.qbroad = 0.0
         self.spdiameter = None
@@ -159,17 +161,17 @@ class Calculation(PDFComponent):
         # print ni_stru
         pc = PDFCalculator()
         pc.qmax = self.qmax
+        pc.qmin = self.qmin
         pc.qdamp = self.qdamp
         pc.qbroad = self.qbroad
         pc.rmin = self.rmin
         pc.rmax = self.rmax
         pc.rstep = self.rstep
-        pc.scale = 1.0  ## always set dscale as 1.0 for now.
-        ### temp: use dscale as Qmin. 
-        pc.qmin = self.dscale
+        pc.scale = self.dscale 
 
         r1, g1 =pc(ni_stru)
-        print pc.qmax, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale,pc.qmin
+        print "pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale,pc.qmin"
+        print pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale,pc.qmin
         ##long
 
 
