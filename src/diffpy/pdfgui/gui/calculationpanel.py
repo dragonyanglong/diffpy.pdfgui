@@ -121,7 +121,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
                         'qbroad'     :   'textCtrlQbroad',
                         'rstep'      :   'textCtrlRStep',
                         'dscale'     :   'textCtrlScaleFactor',
-                        'DebyePC'    :   'textCtrlDebyePC',                        
+                        'debye'      :   'textCtrlDebyePC',                        
                         }
 
         # Give each textCtrl a name that can be referenced and setup the

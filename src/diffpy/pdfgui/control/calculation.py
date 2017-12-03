@@ -49,6 +49,8 @@ class Calculation(PDFComponent):
               maintained only for backward compatible reading of PDFgui
               project files.
     dscale -- total scale factor
+    debye  -- tag to specify use DebyePDFCalculator or PDFCalculator.
+              When debye = 0, use PDF calculator; when debye != 0 use DPC.
     """
 
     def __init__(self, name):
@@ -70,6 +72,7 @@ class Calculation(PDFComponent):
         self.qbroad = 0.0
         self.spdiameter = None
         self.dscale = 1.0
+        self.debye = 0 # default use PDF calculator
         return
 
     def _getStrId(self):
@@ -154,12 +157,17 @@ class Calculation(PDFComponent):
 
         ##long
         from diffpy.Structure import loadStructure
-        from diffpy.srreal.pdfcalculator import PDFCalculator
+        from diffpy.srreal.pdfcalculator import PDFCalculator, DebyePDFCalculator
         print "self.owner.strucs"
         print self.owner.strucs
+        ## loadStructure need improvement
         ni_stru = loadStructure('/Users/Dragon/Documents/Billinge/Ni.stru')
         # print ni_stru
-        pc = PDFCalculator()
+        ##    
+        if self.debye == 0: # use PDFCalculator
+            pc = PDFCalculator()
+        else: # use DebyePDFCalculator
+            pc = DebyePDFCalculator()
         pc.qmax = self.qmax
         pc.qmin = self.qmin
         pc.qdamp = self.qdamp
