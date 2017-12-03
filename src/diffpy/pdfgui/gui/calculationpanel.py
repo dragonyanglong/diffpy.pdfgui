@@ -45,8 +45,8 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.textCtrlQdamp = wx.TextCtrl(self, wx.ID_ANY, "0.0")
         self.labelQbroad = wx.StaticText(self, wx.ID_ANY, "Qbroad", style=wx.ALIGN_RIGHT)
         self.textCtrlQbroad = wx.TextCtrl(self, wx.ID_ANY, "0.0")
-        self.label_1_copy_2 = wx.StaticText(self, wx.ID_ANY, "")
-        self.label_1_copy_1 = wx.StaticText(self, wx.ID_ANY, "")
+        self.labelDebyePC = wx.StaticText(self, wx.ID_ANY, "DPC", style=wx.ALIGN_RIGHT)
+        self.textCtrlDebyePC = wx.TextCtrl(self, wx.ID_ANY, "0")
         self.label_1_copy_6 = wx.StaticText(self, wx.ID_ANY, "")
         self.label_1_copy_5 = wx.StaticText(self, wx.ID_ANY, "")
         self.label_1_copy_3 = wx.StaticText(self, wx.ID_ANY, "")
@@ -92,8 +92,8 @@ class CalculationPanel(wx.Panel, PDFPanel):
         grid_sizer_1.Add(self.textCtrlQdamp, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQbroad, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
         grid_sizer_1.Add(self.textCtrlQbroad, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        grid_sizer_1.Add(self.label_1_copy_2, 0, 0, 0)
-        grid_sizer_1.Add(self.label_1_copy_1, 0, 0, 0)
+        grid_sizer_1.Add(self.labelDebyePC, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
+        grid_sizer_1.Add(self.textCtrlDebyePC, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.label_1_copy_6, 0, 0, 0)
         grid_sizer_1.Add(self.label_1_copy_5, 0, 0, 0)
         grid_sizer_1.Add(self.label_1_copy_3, 0, 0, 0)
@@ -121,6 +121,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
                         'qbroad'     :   'textCtrlQbroad',
                         'rstep'      :   'textCtrlRStep',
                         'dscale'     :   'textCtrlScaleFactor',
+                        'DebyePC'    :   'textCtrlDebyePC',                        
                         }
 
         # Give each textCtrl a name that can be referenced and setup the
@@ -139,6 +140,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.textCtrlQbroad.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
         self.textCtrlScaleFactor.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
         self.textCtrlRStep.Bind(wx.EVT_KILL_FOCUS, self.onCalcRange)
+        self.textCtrlDebyePC.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
 
         # Bind the focus and key events
         for (key, value) in self.ctrlMap.items():

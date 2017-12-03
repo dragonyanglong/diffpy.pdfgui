@@ -170,8 +170,8 @@ class Calculation(PDFComponent):
         pc.scale = self.dscale 
 
         r1, g1 =pc(ni_stru)
-        print "pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale,pc.qmin"
-        print pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale,pc.qmin
+        print "pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale"
+        print pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale
         ##long
 
 
