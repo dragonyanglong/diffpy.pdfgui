@@ -156,13 +156,10 @@ class Calculation(PDFComponent):
         server = PdfFit()
 
         ##long
-        from diffpy.Structure import loadStructure
         from diffpy.srreal.pdfcalculator import PDFCalculator, DebyePDFCalculator
-        print "self.owner.strucs"
-        print self.owner.strucs
+        from diffpy.srreal.structureadapter import nometa
+
         ## loadStructure need improvement
-        ni_stru = loadStructure('/Users/Dragon/Documents/Billinge/Ni.stru')
-        # print ni_stru
         ##    
         if self.debye == 0: # use PDFCalculator
             pc = PDFCalculator()
@@ -177,10 +174,18 @@ class Calculation(PDFComponent):
         pc.rstep = self.rstep
         pc.scale = self.dscale 
 
-        r1, g1 =pc(ni_stru)
         print "pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale"
         print pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale
+
+        print self.owner.strucs
+        print "self.owner.strucs"
         ##long
+
+
+        # load structure and disable metadata using the nometa function 
+        # and set any calculator attributes as needed as above
+        r1, g1 = pc(nometa(self.owner.strucs[0]))
+
 
 
 
