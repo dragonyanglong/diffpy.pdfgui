@@ -49,8 +49,8 @@ class Calculation(PDFComponent):
               maintained only for backward compatible reading of PDFgui
               project files.
     dscale -- total scale factor
-    debye  -- tag to specify use DebyePDFCalculator or PDFCalculator.
-              When debye = 0, use PDF calculator; when debye != 0 use DPC.
+    pctype -- PDF calculator type, 'PC' or 'DPC', to use RealSpacePC
+              or DebyePDFCalculator.
     """
 
     def __init__(self, name):
@@ -72,7 +72,7 @@ class Calculation(PDFComponent):
         self.qbroad = 0.0
         self.spdiameter = None
         self.dscale = 1.0
-        self.debye = 0 # default use PDF calculator
+        self.pctype = 'PC' # default use PDF calculator
         return
 
     def _getStrId(self):
@@ -161,9 +161,9 @@ class Calculation(PDFComponent):
 
         ## loadStructure need improvement
         ##    
-        if self.debye == 0: # use PDFCalculator
+        if self.pctype == 'PC': # use PDFCalculator
             pc = PDFCalculator()
-        else: # use DebyePDFCalculator
+        elif self.pctype == 'DPC': # use DebyePDFCalculator
             pc = DebyePDFCalculator()
         pc.qmax = self.qmax
         pc.qmin = self.qmin
@@ -185,9 +185,6 @@ class Calculation(PDFComponent):
         # load structure and disable metadata using the nometa function 
         # and set any calculator attributes as needed as above
         r1, g1 = pc(nometa(self.owner.strucs[0]))
-
-
-
 
         # structure needs to be read before dataset allocation
         for struc in self.owner.strucs:
@@ -316,6 +313,11 @@ class Calculation(PDFComponent):
             lines.append('stype=X  x-ray scattering')
         elif self.stype == 'N':
             lines.append('stype=N  neutron scattering')
+        # pctype
+        if self.pctype == 'PC':
+            lines.append('PDFCalculator')
+        elif self.pctype == 'DPC':
+            lines.append('DebyePDFCalculator')
         # dscale
         if self.dscale:
             lines.append('dscale=%g' % self.dscale)

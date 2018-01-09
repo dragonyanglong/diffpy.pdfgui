@@ -29,6 +29,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
         wx.Panel.__init__(self, *args, **kwds)
         self.panelNameLabel = wx.StaticText(self, wx.ID_ANY, "Calculation Configuration")
         self.radioBoxStype = wx.RadioBox(self, wx.ID_ANY, "Scatterer Type", choices=["Neutron", "X-ray"], majorDimension=2, style=wx.RA_SPECIFY_COLS)
+        self.radioBoxPCtype = wx.RadioBox(self, wx.ID_ANY, "PDF Calculator Type", choices=["RealSpacePC", "DebyePC"], majorDimension=2, style=wx.RA_SPECIFY_COLS)
         self.labelCalcRange = wx.StaticText(self, wx.ID_ANY, "Range", style=wx.ALIGN_RIGHT)
         self.textCtrlCalcFrom = wx.TextCtrl(self, wx.ID_ANY, "1.0")
         self.labelTo = wx.StaticText(self, wx.ID_ANY, "to", style=wx.ALIGN_RIGHT)
@@ -45,8 +46,6 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.textCtrlQdamp = wx.TextCtrl(self, wx.ID_ANY, "0.0")
         self.labelQbroad = wx.StaticText(self, wx.ID_ANY, "Qbroad", style=wx.ALIGN_RIGHT)
         self.textCtrlQbroad = wx.TextCtrl(self, wx.ID_ANY, "0.0")
-        self.labelDebyePC = wx.StaticText(self, wx.ID_ANY, "DPC", style=wx.ALIGN_RIGHT)
-        self.textCtrlDebyePC = wx.TextCtrl(self, wx.ID_ANY, "0")
         self.label_1_copy_6 = wx.StaticText(self, wx.ID_ANY, "")
         self.label_1_copy_5 = wx.StaticText(self, wx.ID_ANY, "")
         self.label_1_copy_3 = wx.StaticText(self, wx.ID_ANY, "")
@@ -56,14 +55,17 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.__do_layout()
 
         self.Bind(wx.EVT_RADIOBOX, self.onStype, self.radioBoxStype)
+        self.Bind(wx.EVT_RADIOBOX, self.onPCtype, self.radioBoxPCtype)
         # end wxGlade
         self.__customProperties()
 
     def __set_properties(self):
         # begin wxGlade: CalculationPanel.__set_properties
         self.panelNameLabel.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
-        self.radioBoxStype.SetMinSize((330, 43))
+        self.radioBoxStype.SetMinSize((164, 51))
         self.radioBoxStype.SetSelection(0)
+        self.radioBoxPCtype.SetMinSize((228, 51))
+        self.radioBoxPCtype.SetSelection(0)
         # end wxGlade
 
     def __do_layout(self):
@@ -76,6 +78,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
         outerSizer.Add(sizer_panelname, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
         outerSizer.Add((450, 5), 0, 0, 0)
         outerSizer.Add(self.radioBoxStype, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        outerSizer.Add(self.radioBoxPCtype, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         grid_sizer_1.Add(self.labelCalcRange, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
         grid_sizer_1.Add(self.textCtrlCalcFrom, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelTo, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 20)
@@ -92,8 +95,6 @@ class CalculationPanel(wx.Panel, PDFPanel):
         grid_sizer_1.Add(self.textCtrlQdamp, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQbroad, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
         grid_sizer_1.Add(self.textCtrlQbroad, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        grid_sizer_1.Add(self.labelDebyePC, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
-        grid_sizer_1.Add(self.textCtrlDebyePC, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.label_1_copy_6, 0, 0, 0)
         grid_sizer_1.Add(self.label_1_copy_5, 0, 0, 0)
         grid_sizer_1.Add(self.label_1_copy_3, 0, 0, 0)
@@ -112,6 +113,7 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self._focusedText = None
         self.calculation = None
         self.stypeMap = {0: 'N', 1: 'X'}
+        self.pctypeMap = {0: 'PC', 1: 'DPC'}
 
         self.ctrlMap = {'rmin'       :   'textCtrlCalcFrom',
                         'rmax'       :   'textCtrlCalcTo',
@@ -121,7 +123,6 @@ class CalculationPanel(wx.Panel, PDFPanel):
                         'qbroad'     :   'textCtrlQbroad',
                         'rstep'      :   'textCtrlRStep',
                         'dscale'     :   'textCtrlScaleFactor',
-                        'debye'      :   'textCtrlDebyePC',                        
                         }
 
         # Give each textCtrl a name that can be referenced and setup the
@@ -140,7 +141,6 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.textCtrlQbroad.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
         self.textCtrlScaleFactor.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
         self.textCtrlRStep.Bind(wx.EVT_KILL_FOCUS, self.onCalcRange)
-        self.textCtrlDebyePC.Bind(wx.EVT_KILL_FOCUS, self.onKillFocus)
 
         # Bind the focus and key events
         for (key, value) in self.ctrlMap.items():
@@ -163,6 +163,13 @@ class CalculationPanel(wx.Panel, PDFPanel):
                 self.radioBoxStype.SetSelection(0)
             elif stype == 'X':
                 self.radioBoxStype.SetSelection(1)
+
+            pctype = self.calculation.pctype
+
+            if pctype == 'PC':
+                self.radioBoxPCtype.SetSelection(0)
+            elif pctype == 'DPC':
+                self.radioBoxPCtype.SetSelection(1)
 
         for (key, value) in self.ctrlMap.items():
             textCtrl = getattr(self, value)
@@ -245,4 +252,9 @@ class CalculationPanel(wx.Panel, PDFPanel):
         self.setConfigurationData()
         return
 
+    def onPCtype(self, event):  # wxGlade: CalculationPanel.<event_handler>
+        value = event.GetInt()
+        self.calculation.pctype = self.pctypeMap[value]
+        self.mainFrame.needsSave()
+        return
 # end of class CalculationPanel
