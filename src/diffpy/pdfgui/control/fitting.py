@@ -90,6 +90,7 @@ class Fitting(Organizer):
 
         def run(self):
             """overload function from Thread """
+            print "run in class Worker in fitting.py"
             try:
                 self.fitting.run()
             except ControlError,error:
@@ -120,6 +121,10 @@ class Fitting(Organizer):
 
         # the PDFfit2 server instance.
         self.server = None
+
+        # long
+        # CMI server instance
+        self.cmiserver = None
 
         # public data members
         self.step = 0
@@ -152,8 +157,12 @@ class Fitting(Organizer):
 
     def _release(self):
         """release resources"""
+        print "_release in fitting.py"
         if self.server: # server has been allocated, we need free the memory
             self.server.reset()
+        # long
+        # if self.cmiserver:
+        #     self.cmiserver.reset()
 
     def _getStrId(self):
         """make a string identifier
@@ -187,6 +196,7 @@ class Fitting(Organizer):
 
         returns a tree of internal hierachy
         """
+        print "load in fitting.py"
         # subpath = projName/fitName/
         subs = subpath.split('/')
         rootDict = z.fileTree[subs[0]][subs[1]]
@@ -243,6 +253,7 @@ class Fitting(Organizer):
 
         returns self.parameters
         """
+        print "updateParameters in fitting.py"
         # create dictionary of parameters used in constraints
         cpars = {}
         for struc in self.strucs:
@@ -266,6 +277,7 @@ class Fitting(Organizer):
     def applyParameters(self):
         """Evaluate all constrained variables using current parameters.
         """
+        print "applyParameters in fitting.py"
         for struc in self.strucs:
             struc.applyParameters(self.parameters)
         for dataset in self.datasets:
@@ -278,6 +290,7 @@ class Fitting(Organizer):
         This will replace all instances of one parameter name with another in
         the containing fit.
         """
+        print "changeParameterIndex in fitting.py"
         # Change the index in the current structure
         for struc in self.strucs:
             struc.changeParameterIndex(oldidx, newidx)
@@ -312,24 +325,82 @@ class Fitting(Organizer):
                 self.__changeStatus(jobStatus=Fitting.VOID)
 
     def getServer(self):
+        print "getServer in fitting.py"
         """get a PDFfit2 instance either locally or remotely
         """
         if self.fitStatus != Fitting.INITIALIZED:
             return
         # create a new instance of calculation server
         from diffpy.pdffit2 import PdfFit
+        ## long
+        from diffpy.srfit.pdf import PDFContribution
+        self.cmiserver = PDFContribution("test")
+        print "in getServer, self.cmiserver"
+        print self.cmiserver
+        ## end long
         self.server = PdfFit()
+        print "self.server in getServer"
         self.__changeStatus(fitStatus=Fitting.CONNECTED)
 
 
     def configure(self):
         """configure fitting"""
+        print "configure in fitting.py"
         if self.fitStatus != Fitting.CONNECTED:
+            # once run first time, all the rest times it will go here.
             return
 
         # make sure parameters are initialized
         self.updateParameters()
         self.server.reset()
+        ## long
+        from diffpy.srreal.structureadapter import nometa
+        from diffpy.srfit.fitbase import FitRecipe, FitResults
+        from scipy.optimize.minpack import leastsq
+        print "self.strucs[0]"
+        print self.strucs[0]
+        print "nometa(self.strucs[0])"
+        print nometa(self.strucs[0])
+        self.cmiserver.addStructure("test",self.strucs[0])
+        print "self.datasets[0].writeResampledObsStr()"
+        # print self.datasets[0].writeResampledObsStr()
+        self.cmiserver.loadData(self.datasets[0].writeResampledObsStr())
+        cmirecipe = FitRecipe()
+        cmirecipe.addContribution(self.cmiserver)
+        cmirecipe.addVar(self.cmiserver.scale, 0.5)
+        print "start cmi fit"
+        leastsq(cmirecipe.residual,cmirecipe.values)
+        print "get cmi fit result"
+        cmiresults = FitResults(cmirecipe)
+        print "CMI fit results\n"
+        print cmiresults
+
+        ## get experimental data from the recipe
+        r = cmirecipe.test.profile.x
+        gobs = cmirecipe.test.profile.y
+
+        # Get the calculated PDF and compute the difference between the calculated and
+        # measured PDF
+        gcalc = cmirecipe.test.evaluate()
+        baseline = 1.1 * gobs.min()
+        gdiff = gobs - gcalc
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        plt.plot(r, gobs, 'bo',label="G(r) data",
+                 markerfacecolor='none', markeredgecolor='b')
+        plt.plot(r, gcalc, 'r-', label="G(r) fit")
+        plt.plot(r, gdiff + baseline, 'g-', label="G(r) diff")
+        plt.plot(r, np.zeros_like(r) + baseline, 'k:')
+        plt.xlabel(r"r ($\AA$)")
+        plt.ylabel(r"G ($\AA^{-2}$)")
+        plt.legend()
+        plt.show()
+
+
+        # TODO: add qmax, qdamp, qbroad into cmiserver
+        ## end long
+
         for struc in self.strucs:
             struc.clearRefined()
             self.server.read_struct_string(struc.initial.writeStr("pdffit") )
@@ -375,6 +446,8 @@ class Fitting(Organizer):
 
     def resetStatus(self):
         """reset status back to initialized"""
+        print "resetStatus in fitting.py"
+
         self.snapshots = []
         self.step = 0
         if self.fitStatus == Fitting.INITIALIZED:
@@ -387,13 +460,17 @@ class Fitting(Organizer):
         """function to be run in daemon thread.
         """
         # Begin
+        print "run in fitting.py"
         self.__changeStatus(jobStatus=Fitting.RUNNING)
         try:
+            print "try"
             for calc in self.calcs:
+                print "for calc in self.calcs:"
                 calc.start()
 
             while not self.stopped and self.datasets:
                 if not self.paused:
+                    print "if not self.paused"
                     # quick check to make sure status is right
                     # will do nothing if status is CONFIGURED
                     self.getServer()
@@ -401,8 +478,10 @@ class Fitting(Organizer):
 
                     # if self.refine_step return True, fitting is finished
                     if self.refine_step():
+                        print " if self.refine_step():"
                         break
                 else:
+                    print "else"
                     #Wait on an event, pause for a while
                     self.__changeStatus(jobStatus=Fitting.PAUSED)
                     self.pauseEvent.wait()
@@ -411,6 +490,7 @@ class Fitting(Organizer):
                     self.__changeStatus(jobStatus=Fitting.RUNNING)
 
         finally:
+            print "finally"
             # whatever happened, resource should be released.
             self._release()
 
@@ -425,6 +505,7 @@ class Fitting(Organizer):
 
         No return value.
         """
+        print "_configureBondCalculation in fitting.py"
         # struc can be handle to FitStructure.initial
         # let's make sure it is synchronized with current parameters
         self.applyParameters()
@@ -448,6 +529,7 @@ class Fitting(Organizer):
 
         Raise ControlValueError for invalid indices i, j, k.
         """
+        print "outputBondAngle in fitting.py"
         try:
             self._configureBondCalculation(struc)
             self.server.bang(i, j, k)
@@ -527,6 +609,7 @@ class Fitting(Organizer):
 
     def start(self):
         """start fitting"""
+        print "start in fitting.py"
         # check if paused
         if self.jobStatus == Fitting.PAUSED:
             self.pause(False)
@@ -543,6 +626,7 @@ class Fitting(Organizer):
 
     def stop(self):
         """stop the fitting"""
+        print "stop in fitting.py"
         self.stopped = True
 
         # wake up daemon thread if it is paused
@@ -554,10 +638,13 @@ class Fitting(Organizer):
 
         return: True if running, False otherwise
         """
+        print "isThreadRunning in fitting.py"
+        print self.thread is not None and self.thread.isAlive()
         return self.thread is not None and self.thread.isAlive()
 
     def join(self):
         """wait for current fitting to finish"""
+        print "join in fitting.py"
         if self.thread:
             self.thread.join()
             self.thread = None
@@ -567,12 +654,15 @@ class Fitting(Organizer):
 
         force -- if force to exit
         """
+        print "close in fitting.py"
         if force:
+            print "force"
             if self.isThreadRunning():
                 self.stop()
                 #NOTE: Not waiting for thread to stop. There's no graceful
                 #      way while user choose to stop forcefully
         else:
+            print "not force"
             if self.isThreadRunning():
                 raise ControlStatusError,\
                 "Fitting: Fitting %s is still running"%self.name
@@ -598,6 +688,7 @@ class Fitting(Organizer):
         The prefix d_ p_ f_ make dataset,struc,fitname unique within the
         shared name space of dictionary
         """
+        print "buildNameDict in fitting.py"
         self.itemIndex = 0
         dataNameDict = {}
 
@@ -635,6 +726,7 @@ class Fitting(Organizer):
 
         source -- where to get the fitted data, in deed it's a PdfFit2 instance
         """
+        print "appendStep in fitting.py"
         # self.itemIndex should store total number of items
         snapshot = [None] * self.itemIndex
 
@@ -681,6 +773,7 @@ class Fitting(Organizer):
 
         return value: True if refinement is finished, otherwise False
         """
+        print "refine_step in fitting.py"
         if self.fitStatus == Fitting.DONE:
             # do nothing but return finished
             return True
@@ -725,6 +818,9 @@ class Fitting(Organizer):
 
         returns a name str list
         """
+        print "getYNames in fitting.py"
+
+
         names = self.parameters.keys()
         names.append('rw')
         return names
@@ -747,6 +843,7 @@ class Fitting(Organizer):
 
         returns data object, be it a single number, a list, or a list of list
         """
+        print "getData in fitting.py"
         # FIXME: for next plot interface, we need find how many steps the
         # plotter is requiring for and make exact same number of copies of
         # data by name
@@ -759,6 +856,7 @@ class Fitting(Organizer):
     def getMetaDataNames(self):
         """return all applicable meta data names
         """
+        print "getMetaDataNames in fitting.py"
         names = []
         for dataset in self.datasets:
             # build up the name list
@@ -776,6 +874,7 @@ class Fitting(Organizer):
         name -- meta data name
         returns meta data value
         """
+        print "getMetaData in fitting.py"
         try:
             return self.datasets[0].metadata[name]
         except (KeyError, IndexError):
@@ -793,6 +892,7 @@ class Fitting(Organizer):
 
         returns data object, be it a single number, a list, or a list of list
         """
+        print "_getData in fitting.py"
         # find the unique index
         if len(self.snapshots) == 0:
            return None
