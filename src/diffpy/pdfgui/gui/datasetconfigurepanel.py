@@ -31,6 +31,7 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         self.panelNameLabel = wx.StaticText(self, wx.ID_ANY, "Data Set Configuration")
         self.radioBoxStype = wx.RadioBox(self, wx.ID_ANY, "Scatterer Type", choices=["Neutron", "X-ray"], majorDimension=2, style=wx.RA_SPECIFY_COLS)
         self.radioBoxSampling = wx.RadioBox(self, wx.ID_ANY, "Data Sampling", choices=["Data", "Nyquist", "Custom"], majorDimension=3, style=wx.RA_SPECIFY_COLS)
+        self.radioBoxPCtype = wx.RadioBox(self, wx.ID_ANY, "PDF Calculator Type", choices=["RealSpacePC", "DebyePC"], majorDimension=2, style=wx.RA_SPECIFY_COLS)
         self.labelDataRange = wx.StaticText(self, wx.ID_ANY, "Data Range")
         self.textCtrlDataFrom = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY)
         self.labelDataTo = wx.StaticText(self, wx.ID_ANY, "to")
@@ -47,8 +48,8 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         self.textCtrlScaleFactor = wx.TextCtrl(self, wx.ID_ANY, "1.0")
         self.labelQmax = wx.StaticText(self, wx.ID_ANY, "Qmax", style=wx.ALIGN_RIGHT)
         self.textCtrlQmax = wx.TextCtrl(self, wx.ID_ANY, "25.0")
-        self.blank1_copy = wx.StaticText(self, wx.ID_ANY, "")
-        self.blank1_copy_4 = wx.StaticText(self, wx.ID_ANY, "")
+        self.labelQmin = wx.StaticText(self, wx.ID_ANY, "Qmin", style=wx.ALIGN_RIGHT)
+        self.textCtrlQmin = wx.TextCtrl(self, wx.ID_ANY, "0.0")
         self.labelQdamp = wx.StaticText(self, wx.ID_ANY, "Qdamp", style=wx.ALIGN_RIGHT)
         self.textCtrlQdamp = wx.TextCtrl(self, wx.ID_ANY, "0.0")
         self.labelQbroad = wx.StaticText(self, wx.ID_ANY, "Qbroad", style=wx.ALIGN_RIGHT)
@@ -67,6 +68,7 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
 
         self.Bind(wx.EVT_RADIOBOX, self.onStype, self.radioBoxStype)
         self.Bind(wx.EVT_RADIOBOX, self.onSampling, self.radioBoxSampling)
+        self.Bind(wx.EVT_RADIOBOX, self.onPCtype, self.radioBoxPCtype)
         # end wxGlade
         self.__customProperties()
 
@@ -77,6 +79,8 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         self.radioBoxStype.SetSelection(0)
         self.radioBoxSampling.SetMinSize((232, 44))
         self.radioBoxSampling.SetSelection(0)
+        self.radioBoxPCtype.SetMinSize((330, 43))
+        self.radioBoxPCtype.SetSelection(0)
         self.textCtrlDataFrom.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRAYTEXT))
         self.textCtrlDataTo.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRAYTEXT))
         self.textCtrlDataStep.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRAYTEXT))
@@ -93,6 +97,7 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         outerSizer.Add((450, 5), 0, 0, 0)
         outerSizer.Add(self.radioBoxStype, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         outerSizer.Add(self.radioBoxSampling, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        outerSizer.Add(self.radioBoxPCtype, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         grid_sizer_1.Add(self.labelDataRange, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
         grid_sizer_1.Add(self.textCtrlDataFrom, 0, 0, 0)
         grid_sizer_1.Add(self.labelDataTo, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 20)
@@ -109,8 +114,8 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         grid_sizer_1.Add(self.textCtrlScaleFactor, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQmax, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 20)
         grid_sizer_1.Add(self.textCtrlQmax, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        grid_sizer_1.Add(self.blank1_copy, 0, 0, 0)
-        grid_sizer_1.Add(self.blank1_copy_4, 0, 0, 0)
+        grid_sizer_1.Add(self.labelQmin, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 20)
+        grid_sizer_1.Add(self.textCtrlQmin, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQdamp, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 5)
         grid_sizer_1.Add(self.textCtrlQdamp, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.labelQbroad, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT, 20)
@@ -140,6 +145,7 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         self.metaNames = ['doping', 'temperature']
         self.constrainables = ['dscale', 'qdamp', 'qbroad']
         self.sampList = ["data", "Nyquist", "custom"]
+        self.pctypeMap = {0: 'PC', 1: 'DPC'}
         self._focusedText = None
 
         # Note that the rstep and fitrstep attributes are special cases, so they
@@ -174,6 +180,8 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         self.textCtrlQmax.Bind(wx.EVT_KILL_FOCUS, self.onSampling)
         self.textCtrlFitStep.Bind(wx.EVT_KEY_DOWN, self.onTextCtrlKey)
         self.textCtrlQmax.Bind(wx.EVT_KEY_DOWN, self.onTextCtrlKey)
+        # self.textCtrlQmin.Bind(wx.EVT_KEY_DOWN, self.onTextCtrlKey)
+
 
         # For blocked text controls.
         self.message = "This variable is constrained. Edit the associated parameter."
@@ -210,6 +218,13 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
             self.configuration.stype = 'N'
             self.radioBoxStype.SetSelection(0)
 
+        pctype = self.configuration.pctype
+
+        if pctype == 'PC':
+            self.radioBoxPCtype.SetSelection(0)
+        elif pctype == 'DPC':
+            self.radioBoxPCtype.SetSelection(1)
+
         # iterate over all configurable items
         for (key, value) in self.ctrlMap.items():
             textCtrl = getattr(self, value)
@@ -227,6 +242,14 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         # Set qmax
         val = self.configuration.qmax
         self.textCtrlQmax.SetValue(str(val))
+        print "self.configuration.qmmax in panel.py"
+        print self.configuration.qmax
+
+        # Set qmin
+        # here is when user load new data, it automatically set the panel qmin value.
+        # only work for the first time load new data.
+        # val = self.configuration.qmin
+        # self.textCtrlQmin.SetValue(str(val))
 
         # Set the data step
         val = self.configuration.getObsSampling()
@@ -327,6 +350,13 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
             self.configuration.qmax = val
             self.mainFrame.needsSave()
 
+        # Set the value of qmin
+        # val = self.__coerseText(self.textCtrlQmin.GetValue())
+        # oldqmin = self.configuration.qmin
+        # if oldqmin != val:
+        #     self.configuration.qmin = val
+        #     self.mainFrame.needsSave()
+
         # Set the configured value
         if oldsampling != sampling or (sampling == "custom" and oldstep !=
                 step):
@@ -376,4 +406,9 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         return
 
 
+    def onPCtype(self, event):  # wxGlade: DataSetConfigurePanel.<event_handler>
+        value = event.GetInt()
+        self.configuration.pctype = self.pctypeMap[value]
+        self.mainFrame.needsSave()
+        return
 # end of class DataSetConfigurePanel
