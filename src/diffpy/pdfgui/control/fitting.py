@@ -21,8 +21,15 @@ from diffpy.pdfgui.control.controlerrors import ControlError
 from diffpy.pdfgui.control.controlerrors import ControlStatusError
 from diffpy.pdfgui.control.controlerrors import ControlValueError
 
-# helper routines to deal with PDFfit2 exceptions
+#long
+# temp global variable
+# cmii = None
+# print "cmiresults in fitting.py start"
+# print cmiresults
+# print type(cmiresults)
+#end long
 
+# helper routines to deal with PDFfit2 exceptions
 def getEngineExceptions():
     """Return a tuple of possible exceptions from diffpy.pdffit2.pdffit2.
     """
@@ -124,7 +131,12 @@ class Fitting(Organizer):
 
         # long
         # CMI server instance
-        self.cmiserver = None
+        self.cmipdfgen = None
+        self.cmiprofile = None
+        self.cmicontribution = None
+        self.cmirecipe = None
+        self.cmiresults = None
+
 
         # public data members
         self.step = 0
@@ -334,10 +346,18 @@ class Fitting(Organizer):
         from diffpy.pdffit2 import PdfFit
         ## long
         from diffpy.srfit.pdf import PDFContribution
-        self.cmiserver = PDFContribution("test")
+        from diffpy.srfit.fitbase import Profile
+        self.cmiprofile = Profile()
+        # self.cmiserver = PDFContribution("test")
         print "in getServer, self.cmiserver"
-        print self.cmiserver
+        print self.cmipdfgen
         ## end long
+        # ## long
+        # from diffpy.srfit.pdf import PDFContribution
+        # self.cmiserver = PDFContribution("test")
+        # print "in getServer, self.cmiserver"
+        # print self.cmiserver
+        # ## end long
         self.server = PdfFit()
         print "self.server in getServer"
         self.__changeStatus(fitStatus=Fitting.CONNECTED)
@@ -355,33 +375,59 @@ class Fitting(Organizer):
         self.server.reset()
         ## long
         from diffpy.srreal.structureadapter import nometa
-        from diffpy.srfit.fitbase import FitRecipe, FitResults
+        from diffpy.srfit.fitbase import FitContribution, FitRecipe, FitResults
+        from diffpy.srfit.pdf import PDFParser
         from scipy.optimize.minpack import leastsq
-        print "self.strucs[0]"
-        print self.strucs[0]
-        print "nometa(self.strucs[0])"
-        print nometa(self.strucs[0])
-        self.cmiserver.addStructure("test",self.strucs[0])
-        print "self.datasets[0].writeResampledObsStr()"
-        # print self.datasets[0].writeResampledObsStr()
-        self.cmiserver.loadData(self.datasets[0].writeResampledObsStr())
-        cmirecipe = FitRecipe()
-        cmirecipe.addContribution(self.cmiserver)
-        cmirecipe.addVar(self.cmiserver.scale, 0.5)
+
+        from diffpy.srfit.pdf import PDFGenerator, DebyePDFGenerator
+        if self.datasets[0].pctype == 'PC':
+            self.cmipdfgen = PDFGenerator("test1")
+        elif self.datasets[0].pctype == 'DPC':
+            self.cmipdfgen = DebyePDFGenerator("test1")
+
+        self.cmipdfgen.setStructure(self.strucs[0])
+        parser = PDFParser()
+        parser.parseString(self.datasets[0].writeResampledObsStr())
+        self.cmiprofile.loadParsedData(parser)
+
+        self.cmicontribution = FitContribution("test")
+        self.cmicontribution.addProfileGenerator(self.cmipdfgen)
+        self.cmicontribution.setProfile(self.cmiprofile, xname ="r")
+        self.cmicontribution.setEquation("scale * test1")
+
+        print "self.datasets[0]"
+        print self.datasets[0]
+        print self.datasets[0].qmax
+        print self.datasets[0].qmin
+        print self.datasets[0].pctype
+
+        # self.cmiserver.loadData(self.datasets[0].writeResampledObsStr())
+        # add qmax, qdamp, qbroad into cmiserver
+        self.cmipdfgen.setQmax(self.datasets[0].qmax)
+        self.cmipdfgen.qdamp.value = self.datasets[0].qdamp
+        self.cmipdfgen.qbroad.value = self.datasets[0].qbroad
+
+        self.cmirecipe = FitRecipe()
+        self.cmirecipe.addContribution(self.cmicontribution)
+        self.cmirecipe.addVar(self.cmicontribution.scale, 1.0)
+        # turn on printout fithook in each refinement step
+        self.cmirecipe.fithooks[0].verbose = 3
+
+
         print "start cmi fit"
-        leastsq(cmirecipe.residual,cmirecipe.values)
-        print "get cmi fit result"
-        cmiresults = FitResults(cmirecipe)
-        print "CMI fit results\n"
-        print cmiresults
+        leastsq(self.cmirecipe.residual, self.cmirecipe.values)
+        # cmiresults = FitResults(cmirecipe)
+        self.cmiresults = str(FitResults(self.cmirecipe))
+        print "\n CMI fit results \n"
+        print self.cmiresults
 
         ## get experimental data from the recipe
-        r = cmirecipe.test.profile.x
-        gobs = cmirecipe.test.profile.y
+        r = self.cmirecipe.test.profile.x
+        gobs = self.cmirecipe.test.profile.y
 
         # Get the calculated PDF and compute the difference between the calculated and
         # measured PDF
-        gcalc = cmirecipe.test.evaluate()
+        gcalc = self.cmirecipe.test.evaluate()
         baseline = 1.1 * gobs.min()
         gdiff = gobs - gcalc
 
@@ -397,9 +443,60 @@ class Fitting(Organizer):
         plt.legend()
         plt.show()
 
-
-        # TODO: add qmax, qdamp, qbroad into cmiserver
         ## end long
+        # ## long
+        # from diffpy.srreal.structureadapter import nometa
+        # from diffpy.srfit.fitbase import FitRecipe, FitResults
+        # from scipy.optimize.minpack import leastsq
+        # print "self.strucs[0]"
+        # print self.strucs[0]
+        # print "nometa(self.strucs[0])"
+        # print nometa(self.strucs[0])
+        # self.cmiserver.addStructure("test",self.strucs[0])
+        # print "self.datasets[0].writeResampledObsStr()"
+        # self.cmiserver.loadData(self.datasets[0].writeResampledObsStr())
+        # # add qmax, qdamp, qbroad into cmiserver
+        # self.cmiserver.setQmax(self.datasets[0].qmax)
+        # self.cmiserver.qdamp.value = self.datasets[0].qdamp
+        # self.cmiserver.qbroad.value = self.datasets[0].qbroad
+        #
+        # cmirecipe = FitRecipe()
+        # cmirecipe.addContribution(self.cmiserver)
+        # cmirecipe.addVar(self.cmiserver.scale, 0.5)
+        # # turn on printout fithook in each refinement step
+        # cmirecipe.fithooks[0].verbose = 3
+        #
+        #
+        # print "start cmi fit"
+        # leastsq(cmirecipe.residual,cmirecipe.values)
+        # # cmiresults = FitResults(cmirecipe)
+        # self.cmiresults = str(FitResults(cmirecipe))
+        # print "\n CMI fit results \n"
+        # print self.cmiresults
+        #
+        # ## get experimental data from the recipe
+        # r = cmirecipe.test.profile.x
+        # gobs = cmirecipe.test.profile.y
+        #
+        # # Get the calculated PDF and compute the difference between the calculated and
+        # # measured PDF
+        # gcalc = cmirecipe.test.evaluate()
+        # baseline = 1.1 * gobs.min()
+        # gdiff = gobs - gcalc
+        #
+        # import matplotlib.pyplot as plt
+        # import numpy as np
+        # plt.plot(r, gobs, 'bo',label="G(r) data",
+        #          markerfacecolor='none', markeredgecolor='b')
+        # plt.plot(r, gcalc, 'r-', label="G(r) fit")
+        # plt.plot(r, gdiff + baseline, 'g-', label="G(r) diff")
+        # plt.plot(r, np.zeros_like(r) + baseline, 'k:')
+        # plt.xlabel(r"r ($\AA$)")
+        # plt.ylabel(r"G ($\AA^{-2}$)")
+        # plt.legend()
+        # plt.show()
+        #
+        # ## end long
 
         for struc in self.strucs:
             struc.clearRefined()
