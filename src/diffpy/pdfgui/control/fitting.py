@@ -374,6 +374,7 @@ class Fitting(Organizer):
         self.updateParameters()
         self.server.reset()
         ## long
+        self.applyParameters()
         from diffpy.srreal.structureadapter import nometa
         from diffpy.srfit.fitbase import FitContribution, FitRecipe, FitResults
         from diffpy.srfit.pdf import PDFParser
@@ -406,14 +407,84 @@ class Fitting(Organizer):
         self.cmipdfgen.setQmax(self.datasets[0].qmax)
         self.cmipdfgen.qdamp.value = self.datasets[0].qdamp
         self.cmipdfgen.qbroad.value = self.datasets[0].qbroad
+        lat = self.cmipdfgen.phase.getLattice()
+        atoms = self.cmipdfgen.phase.getScatterers()
 
         self.cmirecipe = FitRecipe()
         self.cmirecipe.addContribution(self.cmicontribution)
-        self.cmirecipe.addVar(self.cmicontribution.scale, 1.0)
+        # self.cmirecipe.addVar(self.cmicontribution.scale, 1.0)
+
+
+        for index, par in self.parameters.items():
+            print "index", index, type(index)
+            print "par", par
+            print "par.initialValue()", par.initialValue(), type(par.initialValue())
+
+            # clean any refined value
+            par.refined = None
+            # self.server.setpar(index, par.initialValue()) # info[0] = init value
+            var_name = "var" + str(index)
+            print var_name
+            self.cmirecipe.newVar(var_name, par.initialValue()) # info[0] = init value
+            ## TODO fix parameter
+            # fix if fixed.  Note: all parameters are free after self.server.reset().
+            # if par.fixed:
+            #     self.server.fixpar(index)
+
+        for struc in self.strucs:
+            struc.clearRefined()
+            # self.server.read_struct_string(struc.initial.writeStr("pdffit"))
+            # print "struc.initial.writeStr(pdffit)"
+            # print struc.initial.writeStr("pdffit")
+            # print "struc.constraints.items()"
+            # print struc.constraints.items()
+            for key, var in struc.constraints.items():
+                print "key", key
+                print "var", var
+                key_ascii = key.encode('ascii')
+                formula_ascii = var.formula.encode('ascii')
+                print "key_ascii", key_ascii
+                print "formula_ascii", formula_ascii, type(formula_ascii)
+
+                var_name = self.transVar(formula_ascii)
+                print var_name
+                if key_ascii == 'pscale':
+                    self.cmirecipe.constrain(self.cmicontribution.scale, var_name)
+                if key_ascii == 'lat(1)':
+                    self.cmirecipe.constrain(lat.a, var_name)
+                if key_ascii == 'lat(2)':
+                    self.cmirecipe.constrain(lat.b, var_name)
+                if key_ascii == 'lat(3)':
+                    self.cmirecipe.constrain(lat.c, var_name)
+                if key_ascii == 'lat(4)':
+                    self.cmirecipe.constrain(lat.alpha, var_name)
+                if key_ascii == 'lat(5)':
+                    self.cmirecipe.constrain(lat.beta, var_name)
+                if key_ascii == 'lat(6)':
+                    self.cmirecipe.constrain(lat.gamma, var_name)
+
+                # ADP
+                ## TODO key_ascii == 'u11(i)', constrain the ith atom's ADP U11.
+                # How to determine key_ascii == 'u11(i)' and parse the number 'i' in ().
+                # if key_ascii == 'u11(i)':
+                    # self.cmirecipe.constrain(atoms[i-1].U11, var_name)
+
+                # delta term
+                if key_ascii == 'delta2':
+                    self.cmirecipe.constrain(self.cmipdfgen.delta2, var_name)
+                if key_ascii == 'delta1':
+                    self.cmirecipe.constrain(self.cmipdfgen.delta1, var_name)
+
+
+
+                    # self.server.constrain(key_ascii, formula_ascii)
+
+
         # turn on printout fithook in each refinement step
         self.cmirecipe.fithooks[0].verbose = 3
-
-
+        # live plot
+        # from diffpy.srfit.fitbase.fithook import PlotFitHook
+        # self.cmirecipe.pushFitHook(PlotFitHook())
         print "start cmi fit"
         leastsq(self.cmirecipe.residual, self.cmirecipe.values)
         # cmiresults = FitResults(cmirecipe)
@@ -500,10 +571,18 @@ class Fitting(Organizer):
 
         for struc in self.strucs:
             struc.clearRefined()
-            self.server.read_struct_string(struc.initial.writeStr("pdffit") )
+            self.server.read_struct_string(struc.initial.writeStr("pdffit"))
+            print "struc.initial.writeStr(pdffit)"
+            print struc.initial.writeStr("pdffit")
+            print "struc.constraints.items()"
+            print struc.constraints.items()
             for key, var in struc.constraints.items():
+                print "key", key
+                print "var", var
                 key_ascii = key.encode('ascii')
                 formula_ascii = var.formula.encode('ascii')
+                print "key_ascii", key_ascii
+                print "formula_ascii", formula_ascii
                 self.server.constrain(key_ascii, formula_ascii)
 
         # phase paramters configured
@@ -526,10 +605,15 @@ class Fitting(Organizer):
             for phaseidx, struc in zip(range(1, nstrucs + 1), self.strucs):
                 struc.applyPairSelection(self.server, phaseidx)
 
+        print "self.parameters.items():"
+        print self.parameters.items()
         for index, par in self.parameters.items():
+            print "index", index
+            print "par", par
             # clean any refined value
             par.refined = None
             self.server.setpar(index, par.initialValue()) # info[0] = init value
+            print "par.initialValue()", par.initialValue()
             # fix if fixed.  Note: all parameters are free after self.server.reset().
             if par.fixed:
                 self.server.fixpar(index)
@@ -1007,5 +1091,18 @@ class Fitting(Organizer):
             return [ self.snapshots[i][index] for i in step ]
         else:
             return self.snapshots[step][index]
+
+    # Long new helper function
+    def transVar(self, str):
+        # input "@11"
+        # output "var11"
+        return str.replace("@", "var")
+
+    def parseADP(selfself, str):
+        # TODO
+        # input key "U11(1)"
+        # output U11 and 1 seperately.
+        return
+
 
 # End of file
