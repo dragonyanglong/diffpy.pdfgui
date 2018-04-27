@@ -391,7 +391,9 @@ class Fitting(Organizer):
         parser.parseString(self.datasets[0].writeResampledObsStr())
         self.cmiprofile.loadParsedData(parser)
         # TODO set dataset r-range
-        # self.cmiprofile.setCalculationRange(xmin = self.datasets[0].rmin, xmax = self.datasets[0].rmax, dx = 0.01)
+        # self.cmiprofile.setCalculationRange(xmin = self.datasets[0].fitrmin,
+        #                                     xmax = self.datasets[0].fitrmax,
+        #                                     dx = self.datasets[0].fitrstep)
 
         self.cmicontribution = FitContribution("test")
         self.cmicontribution.addProfileGenerator(self.cmipdfgen)
@@ -399,12 +401,14 @@ class Fitting(Organizer):
         self.cmicontribution.setEquation("scale * test1")
 
         print "self.datasets[0]"
+        # self.datasets[0] is `FitDataSet` object.
         print self.datasets[0]
         print self.datasets[0].qmax
         print self.datasets[0].qmin
         print self.datasets[0].pctype
-        print self.datasets[0].rmin
-        print self.datasets[0].rmax
+        print self.datasets[0].fitrmin
+        print self.datasets[0].fitrmax
+        print self.datasets[0].fitrstep
         # print self.datasets[0].rstep
 
         # self.cmiserver.loadData(self.datasets[0].writeResampledObsStr())
@@ -412,8 +416,6 @@ class Fitting(Organizer):
         self.cmipdfgen.setQmax(self.datasets[0].qmax)
         self.cmipdfgen.qdamp.value = self.datasets[0].qdamp
         self.cmipdfgen.qbroad.value = self.datasets[0].qbroad
-        lat = self.cmipdfgen.phase.getLattice()
-        atoms = self.cmipdfgen.phase.getScatterers()
 
         self.cmirecipe = FitRecipe()
         self.cmirecipe.addContribution(self.cmicontribution)
@@ -448,82 +450,7 @@ class Fitting(Organizer):
                 print "var", var
                 key_ascii = key.encode('ascii')
                 formula_ascii = var.formula.encode('ascii')
-                print "key_ascii", key_ascii
-                print "formula_ascii", formula_ascii, type(formula_ascii)
-
-                key_ascii_ref, key_ascii_arg = self.__getRef(key_ascii)
-                var_name = self.transVar(formula_ascii)
-                print var_name
-                if key_ascii_ref == 'pscale':
-                    self.cmirecipe.constrain(self.cmicontribution.scale, var_name)
-                if key_ascii_ref == 'lat':
-                    print 'in lat branch'
-                    print key_ascii_ref, key_ascii_arg
-                    if key_ascii_arg == 1:
-                        self.cmirecipe.constrain(lat.a, var_name)
-                    if key_ascii_arg == 2:
-                        self.cmirecipe.constrain(lat.b, var_name)
-                    if key_ascii_arg == 3:
-                        self.cmirecipe.constrain(lat.c, var_name)
-                    if key_ascii_arg == 4:
-                        self.cmirecipe.constrain(lat.alpha, var_name)
-                    if key_ascii_arg == 5:
-                        self.cmirecipe.constrain(lat.beta, var_name)
-                    if key_ascii_arg == 6:
-                        self.cmirecipe.constrain(lat.gamma, var_name)
-
-                # delta term
-                if key_ascii_ref == 'delta1':
-                    self.cmirecipe.constrain(self.cmipdfgen.delta1, var_name)
-                if key_ascii_ref == 'delta2':
-                    self.cmirecipe.constrain(self.cmipdfgen.delta2, var_name)
-
-                # ADP
-                ## TODO key_ascii == 'u11(i)', constrain the ith atom's ADP U11.
-                if key_ascii_ref == 'u11':
-                    print 'in adp branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U11, var_name)
-                if key_ascii_ref == 'u22':
-                    print 'in adp branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U22, var_name)
-                if key_ascii_ref == 'u33':
-                    print 'in adp branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U33, var_name)
-                if key_ascii_ref == 'u12':
-                    print 'in adp branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U12, var_name)
-                if key_ascii_ref == 'u13':
-                    print 'in adp branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U13, var_name)
-                if key_ascii_ref == 'u23':
-                    print 'in adp branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U23, var_name)
-
-                # atom positions
-                if key_ascii_ref == 'x':
-                    print 'in atom positions branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].x, var_name)
-                if key_ascii_ref == 'y':
-                    print 'in atom positions branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].y, var_name)
-                if key_ascii_ref == 'z':
-                    print 'in atom positions branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].z, var_name)
-
-                # occupancy
-                if key_ascii_ref == 'occ':
-                    print 'in occupancy branch'
-                    print key_ascii_ref, key_ascii_arg
-                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].occupancy, var_name)
+                self.cmiConstrain(key_ascii, formula_ascii)
 
 
         # turn on printout fithook in each refinement step
@@ -1139,6 +1066,66 @@ class Fitting(Organizer):
             return self.snapshots[step][index]
 
     # Long new helper function
+    def cmiConstrain(self, key_ascii, formula_ascii):
+        """
+        constrain structure parameters into cmi receipe.
+        :param key_ascii: names of parameters, like pscale, lat(n).
+        :param formula_ascii: names of constrains, like @1, @2 + 1.
+        :return: None
+        """
+        lat = self.cmipdfgen.phase.getLattice()
+        atoms = self.cmipdfgen.phase.getScatterers()
+        key_ascii_ref, key_ascii_arg = self.__getRef(key_ascii)
+        var_name = self.transVar(formula_ascii)
+        # phase scale
+        if key_ascii_ref == 'pscale':
+            self.cmirecipe.constrain(self.cmicontribution.scale, var_name)
+        # lattice parameters
+        if key_ascii_ref == 'lat':
+            if key_ascii_arg == 1:
+                self.cmirecipe.constrain(lat.a, var_name)
+            if key_ascii_arg == 2:
+                self.cmirecipe.constrain(lat.b, var_name)
+            if key_ascii_arg == 3:
+                self.cmirecipe.constrain(lat.c, var_name)
+            if key_ascii_arg == 4:
+                self.cmirecipe.constrain(lat.alpha, var_name)
+            if key_ascii_arg == 5:
+                self.cmirecipe.constrain(lat.beta, var_name)
+            if key_ascii_arg == 6:
+                self.cmirecipe.constrain(lat.gamma, var_name)
+        # delta term
+        if key_ascii_ref == 'delta1':
+            self.cmirecipe.constrain(cmipdfgen.delta1, var_name)
+        if key_ascii_ref == 'delta2':
+            self.cmirecipe.constrain(cmipdfgen.delta2, var_name)
+        # ADP
+        # atoms list index = key_ascii_arg - 1
+        if key_ascii_ref == 'u11':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].U11, var_name)
+        if key_ascii_ref == 'u22':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].U22, var_name)
+        if key_ascii_ref == 'u33':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].U33, var_name)
+        if key_ascii_ref == 'u12':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].U12, var_name)
+        if key_ascii_ref == 'u13':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].U13, var_name)
+        if key_ascii_ref == 'u23':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].U23, var_name)
+        # atom positions
+        if key_ascii_ref == 'x':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].x, var_name)
+        if key_ascii_ref == 'y':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].y, var_name)
+        if key_ascii_ref == 'z':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].z, var_name)
+        # occupancy
+        if key_ascii_ref == 'occ':
+            self.cmirecipe.constrain(atoms[key_ascii_arg - 1].occupancy, var_name)
+        return
+
+
     def transVar(self, str):
         # input "@11"
         # output "var11"
@@ -1158,9 +1145,7 @@ class Fitting(Organizer):
             pdffit2.unassignedError if variable is not yet assigned
             ValueError if variable index does not exist (e.g. lat(7))
         """
-        print "__getRef in fitting.py"
         var_string = _convertCallable(var_string)
-        print "var_string", var_string
         arg_int = None
         try:
             method_string, arg_string = var_string.split("(")
@@ -1168,7 +1153,6 @@ class Fitting(Organizer):
             arg_int = int(arg_string.strip(")").strip())
         except ValueError: #There is no arg_string
             method_string = var_string.strip()
-        print "output method_string, arg_int", method_string, arg_int
         return method_string, arg_int
 
 
