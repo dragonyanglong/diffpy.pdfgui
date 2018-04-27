@@ -420,7 +420,6 @@ class Fitting(Organizer):
         self.cmirecipe.addContribution(self.cmicontribution)
         # self.cmirecipe.addVar(self.cmicontribution.scale, 1.0)
 
-
         for index, par in self.parameters.items():
             print "index", index, type(index)
             print "par", par
@@ -437,6 +436,7 @@ class Fitting(Organizer):
             # if par.fixed:
             #     self.server.fixpar(index)
 
+        # phase constrains
         for struc in self.strucs:
             struc.clearRefined()
             # self.server.read_struct_string(struc.initial.writeStr("pdffit"))
@@ -450,6 +450,36 @@ class Fitting(Organizer):
                 key_ascii = key.encode('ascii')
                 formula_ascii = var.formula.encode('ascii')
                 self.cmiConstrain(key_ascii, formula_ascii)
+
+        # data constrains
+        for dataset in self.datasets:
+            dataset.clearRefined()
+            # self.server.read_data_string(dataset.writeResampledObsStr(),
+            #                              dataset.stype.encode('ascii'),
+            #                              dataset.qmax,
+            #                              dataset.qdamp)
+            # self.server.setvar('qbroad', dataset.qbroad)
+            print "dataset.qmax", dataset.qmax
+            print "dataset.qdamp", dataset.qdamp
+            print "dataset.qbroad", dataset.qbroad
+            print "dataset.qmin", dataset.qmin
+            for key,var in dataset.constraints.items():
+                print "key", key
+                print "var", var
+                key_ascii = key.encode('ascii')
+                formula_ascii = var.formula.encode('ascii')
+                self.cmiConstrain(key_ascii, formula_ascii)
+                # self.server.constrain(key.encode('ascii'), var.formula.encode('ascii'))
+
+            # Removed call to pdfrange call, because data were already
+            # resampled to at fit range.
+            #
+            # Pair selection applies only to the current dataset,
+            # therefore it has to be done here.
+            # TODO the following three lines
+            # nstrucs = len(self.strucs)
+            # for phaseidx, struc in zip(range(1, nstrucs + 1), self.strucs):
+            #     struc.applyPairSelection(self.server, phaseidx)
 
 
         # turn on printout fithook in each refinement step
@@ -566,8 +596,14 @@ class Fitting(Organizer):
                                          dataset.qmax,
                                          dataset.qdamp)
             self.server.setvar('qbroad', dataset.qbroad)
+            print "dataset.qmax", dataset.qmax
+            print "dataset.qdamp", dataset.qdamp
+            print "dataset.qbroad", dataset.qbroad
+            print "dataset.qmin", dataset.qmin
             for key,var in dataset.constraints.items():
                 self.server.constrain(key.encode('ascii'), var.formula.encode('ascii'))
+                print "key", key
+                print "var", var
             # Removed call to pdfrange call, because data were already
             # resampled to at fit range.
             #
@@ -1076,6 +1112,7 @@ class Fitting(Organizer):
         atoms = self.cmipdfgen.phase.getScatterers()
         key_ascii_ref, key_ascii_arg = self.__getRef(key_ascii)
         var_name = self.transVar(formula_ascii)
+        # phase parameters
         # phase scale
         if key_ascii_ref == 'pscale':
             self.cmirecipe.constrain(self.cmicontribution.scale, var_name)
@@ -1095,9 +1132,9 @@ class Fitting(Organizer):
                 self.cmirecipe.constrain(lat.gamma, var_name)
         # delta term
         if key_ascii_ref == 'delta1':
-            self.cmirecipe.constrain(cmipdfgen.delta1, var_name)
+            self.cmirecipe.constrain(self.cmipdfgen.delta1, var_name)
         if key_ascii_ref == 'delta2':
-            self.cmirecipe.constrain(cmipdfgen.delta2, var_name)
+            self.cmirecipe.constrain(self.cmipdfgen.delta2, var_name)
         # ADP
         # atoms list index = key_ascii_arg - 1
         if key_ascii_ref == 'u11':
@@ -1122,6 +1159,13 @@ class Fitting(Organizer):
         # occupancy
         if key_ascii_ref == 'occ':
             self.cmirecipe.constrain(atoms[key_ascii_arg - 1].occupancy, var_name)
+
+        # data parameters
+        if key_ascii_ref == 'qdamp':
+            self.cmirecipe.constrain(self.cmipdfgen.qdamp, var_name)
+        if key_ascii_ref == 'qbroad':
+            self.cmirecipe.constrain(self.cmipdfgen.qbroad, var_name)
+        # TODO how to deal with `dscale`. cmipdfgen don't have `dscale` parameter.
         return
 
 
