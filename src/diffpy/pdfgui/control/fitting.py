@@ -390,6 +390,8 @@ class Fitting(Organizer):
         parser = PDFParser()
         parser.parseString(self.datasets[0].writeResampledObsStr())
         self.cmiprofile.loadParsedData(parser)
+        # TODO set dataset r-range
+        # self.cmiprofile.setCalculationRange(xmin = self.datasets[0].rmin, xmax = self.datasets[0].rmax, dx = 0.01)
 
         self.cmicontribution = FitContribution("test")
         self.cmicontribution.addProfileGenerator(self.cmipdfgen)
@@ -401,6 +403,9 @@ class Fitting(Organizer):
         print self.datasets[0].qmax
         print self.datasets[0].qmin
         print self.datasets[0].pctype
+        print self.datasets[0].rmin
+        print self.datasets[0].rmax
+        # print self.datasets[0].rstep
 
         # self.cmiserver.loadData(self.datasets[0].writeResampledObsStr())
         # add qmax, qdamp, qbroad into cmiserver
@@ -467,21 +472,58 @@ class Fitting(Organizer):
                     if key_ascii_arg == 6:
                         self.cmirecipe.constrain(lat.gamma, var_name)
 
-                # ADP
-                ## TODO key_ascii == 'u11(i)', constrain the ith atom's ADP U11.
-                # How to determine key_ascii == 'u11(i)' and parse the number 'i' in ().
-                # if key_ascii == 'u11(i)':
-                    # self.cmirecipe.constrain(atoms[i-1].U11, var_name)
-
                 # delta term
                 if key_ascii_ref == 'delta1':
                     self.cmirecipe.constrain(self.cmipdfgen.delta1, var_name)
                 if key_ascii_ref == 'delta2':
                     self.cmirecipe.constrain(self.cmipdfgen.delta2, var_name)
 
+                # ADP
+                ## TODO key_ascii == 'u11(i)', constrain the ith atom's ADP U11.
+                if key_ascii_ref == 'u11':
+                    print 'in adp branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U11, var_name)
+                if key_ascii_ref == 'u22':
+                    print 'in adp branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U22, var_name)
+                if key_ascii_ref == 'u33':
+                    print 'in adp branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U33, var_name)
+                if key_ascii_ref == 'u12':
+                    print 'in adp branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U12, var_name)
+                if key_ascii_ref == 'u13':
+                    print 'in adp branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U13, var_name)
+                if key_ascii_ref == 'u23':
+                    print 'in adp branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].U23, var_name)
 
+                # atom positions
+                if key_ascii_ref == 'x':
+                    print 'in atom positions branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].x, var_name)
+                if key_ascii_ref == 'y':
+                    print 'in atom positions branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].y, var_name)
+                if key_ascii_ref == 'z':
+                    print 'in atom positions branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].z, var_name)
 
-                    # self.server.constrain(key_ascii, formula_ascii)
+                # occupancy
+                if key_ascii_ref == 'occ':
+                    print 'in occupancy branch'
+                    print key_ascii_ref, key_ascii_arg
+                    self.cmirecipe.constrain(atoms[key_ascii_arg-1].occupancy, var_name)
 
 
         # turn on printout fithook in each refinement step
