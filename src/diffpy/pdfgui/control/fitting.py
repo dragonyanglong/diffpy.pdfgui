@@ -446,22 +446,26 @@ class Fitting(Organizer):
                 print "key_ascii", key_ascii
                 print "formula_ascii", formula_ascii, type(formula_ascii)
 
+                key_ascii_ref, key_ascii_arg = self.__getRef(key_ascii)
                 var_name = self.transVar(formula_ascii)
                 print var_name
-                if key_ascii == 'pscale':
+                if key_ascii_ref == 'pscale':
                     self.cmirecipe.constrain(self.cmicontribution.scale, var_name)
-                if key_ascii == 'lat(1)':
-                    self.cmirecipe.constrain(lat.a, var_name)
-                if key_ascii == 'lat(2)':
-                    self.cmirecipe.constrain(lat.b, var_name)
-                if key_ascii == 'lat(3)':
-                    self.cmirecipe.constrain(lat.c, var_name)
-                if key_ascii == 'lat(4)':
-                    self.cmirecipe.constrain(lat.alpha, var_name)
-                if key_ascii == 'lat(5)':
-                    self.cmirecipe.constrain(lat.beta, var_name)
-                if key_ascii == 'lat(6)':
-                    self.cmirecipe.constrain(lat.gamma, var_name)
+                if key_ascii_ref == 'lat':
+                    print 'in lat branch'
+                    print key_ascii_ref, key_ascii_arg
+                    if key_ascii_arg == 1:
+                        self.cmirecipe.constrain(lat.a, var_name)
+                    if key_ascii_arg == 2:
+                        self.cmirecipe.constrain(lat.b, var_name)
+                    if key_ascii_arg == 3:
+                        self.cmirecipe.constrain(lat.c, var_name)
+                    if key_ascii_arg == 4:
+                        self.cmirecipe.constrain(lat.alpha, var_name)
+                    if key_ascii_arg == 5:
+                        self.cmirecipe.constrain(lat.beta, var_name)
+                    if key_ascii_arg == 6:
+                        self.cmirecipe.constrain(lat.gamma, var_name)
 
                 # ADP
                 ## TODO key_ascii == 'u11(i)', constrain the ith atom's ADP U11.
@@ -470,10 +474,10 @@ class Fitting(Organizer):
                     # self.cmirecipe.constrain(atoms[i-1].U11, var_name)
 
                 # delta term
-                if key_ascii == 'delta2':
-                    self.cmirecipe.constrain(self.cmipdfgen.delta2, var_name)
-                if key_ascii == 'delta1':
+                if key_ascii_ref == 'delta1':
                     self.cmirecipe.constrain(self.cmipdfgen.delta1, var_name)
+                if key_ascii_ref == 'delta2':
+                    self.cmirecipe.constrain(self.cmipdfgen.delta2, var_name)
 
 
 
@@ -1098,11 +1102,47 @@ class Fitting(Organizer):
         # output "var11"
         return str.replace("@", "var")
 
-    def parseADP(selfself, str):
-        # TODO
-        # input key "U11(1)"
-        # output U11 and 1 seperately.
-        return
+    def __getRef(self, var_string):
+        # copy from __getRef in pdffit.py
+        # input pscale, output method_string = "pscale", arg_int = None
+        # input lat(1), output method_string = "lat", arg_int = 1
+        # input u11(2), output method_string = "u11", arg_int = 2
+        """Return the actual reference to the variable in the var_string.
+
+        This function must be called before trying to actually reference an
+        internal variable. See the constrain method for an example.
+
+        Raises:
+            pdffit2.unassignedError if variable is not yet assigned
+            ValueError if variable index does not exist (e.g. lat(7))
+        """
+        print "__getRef in fitting.py"
+        var_string = _convertCallable(var_string)
+        print "var_string", var_string
+        arg_int = None
+        try:
+            method_string, arg_string = var_string.split("(")
+            method_string = method_string.strip()
+            arg_int = int(arg_string.strip(")").strip())
+        except ValueError: #There is no arg_string
+            method_string = var_string.strip()
+        print "output method_string, arg_int", method_string, arg_int
+        return method_string, arg_int
+
+
+# Long helper routines
+def _convertCallable(var):
+     """Convert an object to the result of its call when callable.
+
+     var -- string or callable object that returns string
+
+     Return var or var().
+     """
+     if callable(var):
+         rv = var()
+     else:
+         rv = var
+     return rv
 
 
 # End of file
