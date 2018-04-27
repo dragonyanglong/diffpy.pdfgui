@@ -390,10 +390,9 @@ class Fitting(Organizer):
         parser = PDFParser()
         parser.parseString(self.datasets[0].writeResampledObsStr())
         self.cmiprofile.loadParsedData(parser)
-        # TODO set dataset r-range
-        # self.cmiprofile.setCalculationRange(xmin = self.datasets[0].fitrmin,
-        #                                     xmax = self.datasets[0].fitrmax,
-        #                                     dx = self.datasets[0].fitrstep)
+        self.cmiprofile.setCalculationRange(xmin = self.datasets[0].fitrmin,
+                                            xmax = self.datasets[0].fitrmax,
+                                            dx = self.datasets[0].fitrstep)
 
         self.cmicontribution = FitContribution("test")
         self.cmicontribution.addProfileGenerator(self.cmipdfgen)
