@@ -396,7 +396,14 @@ class Fitting(Organizer):
 
         self.cmicontribution = FitContribution("test")
         self.cmicontribution.addProfileGenerator(self.cmipdfgen)
-        self.cmicontribution.setProfile(self.cmiprofile, xname ="r")
+        self.cmicontribution.setProfile(self.cmiprofile, xname = "r")
+
+        #spdiamter
+        '''
+        from diffpy.srfit.pdf.characteristicfunctions import sphericalCF
+        self.cmicontribution.registerFunction(sphericalCF, name = "spdiameter")
+        self.cmicontribution.setEquation("scale * test1 * spdiameter")
+        '''
         self.cmicontribution.setEquation("scale * test1")
 
         print "self.datasets[0]"
@@ -487,11 +494,11 @@ class Fitting(Organizer):
         # live plot
         # from diffpy.srfit.fitbase.fithook import PlotFitHook
         # self.cmirecipe.pushFitHook(PlotFitHook())
-        print "start cmi fit"
         leastsq(self.cmirecipe.residual, self.cmirecipe.values)
         # cmiresults = FitResults(cmirecipe)
-        self.cmiresults = str(FitResults(self.cmirecipe))
-        print "\n CMI fit results \n"
+        self.cmiresults = "\n=============================== CMI RESULTS ==================================\n"
+        self.cmiresults += str(FitResults(self.cmirecipe))
+        self.cmiresults += "============================ END OF CMI RESULTS ==============================\n\n"
         print self.cmiresults
 
         ## get experimental data from the recipe
@@ -506,14 +513,16 @@ class Fitting(Organizer):
 
         import matplotlib.pyplot as plt
         import numpy as np
-        plt.plot(r, gobs, 'bo',label="G(r) data",
-                 markerfacecolor='none', markeredgecolor='b')
-        plt.plot(r, gcalc, 'r-', label="G(r) fit")
-        plt.plot(r, gdiff + baseline, 'g-', label="G(r) diff")
-        plt.plot(r, np.zeros_like(r) + baseline, 'k:')
-        plt.xlabel(r"r ($\AA$)")
-        plt.ylabel(r"G ($\AA^{-2}$)")
-        plt.legend()
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(r, gobs, 'bo', label="G(r) data",
+                markerfacecolor='none', markeredgecolor='b')
+        ax.plot(r, gcalc, 'r-', label="G(r) fit")
+        ax.plot(r, gdiff + baseline, 'g-', label="G(r) diff")
+        ax.plot(r, np.zeros_like(r) + baseline, 'k:')
+        ax.set_xlabel(r"r ($\AA$)")
+        ax.set_ylabel(r"G ($\AA^{-2}$)")
+        ax.legend(loc='upper right')
         plt.show()
 
         ## end long
@@ -639,6 +648,14 @@ class Fitting(Organizer):
 
         self.snapshots = []
         self.step = 0
+        # long
+        # initialize cmi
+        self.cmipdfgen = None
+        self.cmiprofile = None
+        self.cmicontribution = None
+        self.cmirecipe = None
+        self.cmiresults = None
+        # end long
         if self.fitStatus == Fitting.INITIALIZED:
             return  # already reset
 
@@ -1116,6 +1133,10 @@ class Fitting(Organizer):
         # phase scale
         if key_ascii_ref == 'pscale':
             self.cmirecipe.constrain(self.cmicontribution.scale, var_name)
+        '''
+        if key_ascii_ref == 'spdiameter':
+            self.cmirecipe.constrain(self.cmicontribution.psize, var_name)
+        '''
         # lattice parameters
         if key_ascii_ref == 'lat':
             if key_ascii_arg == 1:

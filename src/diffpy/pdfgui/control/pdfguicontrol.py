@@ -603,6 +603,20 @@ class PDFGuiControl:
         redirect_stdout(cStringIO.StringIO())
         return txt
 
+    #long
+    def getCMIOutput(self):
+        """Get the output from the CMI engine."""
+        txt = None
+        if self.currentFitting:
+            if self.currentFitting.cmiresults:
+                txt = self.currentFitting.cmiresults
+        return txt
+
+    def resetCMIOutput(self):
+        self.currentFitting.cmiresults = None
+        return
+    #end Long
+
 _pdfguicontrol = None
 def pdfguicontrol(*args, **kwargs):
     """This function will return the single instance of class PDFGuiControl"""

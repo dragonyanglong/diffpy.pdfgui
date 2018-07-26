@@ -186,11 +186,14 @@ class Calculation(PDFComponent):
         # and set any calculator attributes as needed as above
         r1, g1 = pc(nometa(self.owner.strucs[0]))
 
+        self.owner.applyParameters()
+
         # structure needs to be read before dataset allocation
         for struc in self.owner.strucs:
             server.read_struct_string(struc.writeStr('pdffit'))
             for key,var in struc.constraints.items():
                 server.constrain(key.encode('ascii'), var.formula.encode('ascii'))
+                var.formula.encode()
 
         # set up dataset
         #rlen is the bin: bin     -- number of data points in calculation
