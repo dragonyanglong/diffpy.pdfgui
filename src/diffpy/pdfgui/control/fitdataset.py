@@ -289,6 +289,7 @@ class FitDataSet(PDFDataSet):
         # qmax
         if self.qmax:
             lines.append('qmax=%.2f' % self.qmax)
+        # TODO: qmin and PCtype
         # qdamp
         lines.append('qdamp=%g' % self.refined['qdamp'])
         # qbroad

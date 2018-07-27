@@ -410,6 +410,7 @@ class Fitting(Organizer):
         # self.datasets[0] is `FitDataSet` object.
         print self.datasets[0]
         print self.datasets[0].qmax
+        print "print self.datasets[0].qmin"
         print self.datasets[0].qmin
         print self.datasets[0].pctype
         print self.datasets[0].fitrmin
@@ -418,8 +419,9 @@ class Fitting(Organizer):
         # print self.datasets[0].rstep
 
         # self.cmiserver.loadData(self.datasets[0].writeResampledObsStr())
-        # add qmax, qdamp, qbroad into cmiserver
+        # add qmax, qmin, qdamp, qbroad into cmiserver
         self.cmipdfgen.setQmax(self.datasets[0].qmax)
+        self.cmipdfgen.setQmin(self.datasets[0].qmin)
         self.cmipdfgen.qdamp.value = self.datasets[0].qdamp
         self.cmipdfgen.qbroad.value = self.datasets[0].qbroad
 

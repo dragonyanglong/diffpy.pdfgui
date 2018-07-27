@@ -178,9 +178,10 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
 
         self.textCtrlFitStep.Bind(wx.EVT_KILL_FOCUS, self.onSampling)
         self.textCtrlQmax.Bind(wx.EVT_KILL_FOCUS, self.onSampling)
+        self.textCtrlQmin.Bind(wx.EVT_KILL_FOCUS, self.onSampling)
         self.textCtrlFitStep.Bind(wx.EVT_KEY_DOWN, self.onTextCtrlKey)
         self.textCtrlQmax.Bind(wx.EVT_KEY_DOWN, self.onTextCtrlKey)
-        # self.textCtrlQmin.Bind(wx.EVT_KEY_DOWN, self.onTextCtrlKey)
+        self.textCtrlQmin.Bind(wx.EVT_KEY_DOWN, self.onTextCtrlKey)
 
 
         # For blocked text controls.
@@ -198,6 +199,7 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         stype           --  'N' or 'X'
         dscale          --  float
         qmax            --  float
+        qmin            --  float
         qdamp           --  float
         rmin            --  float
         rmax            --  float
@@ -242,14 +244,16 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
         # Set qmax
         val = self.configuration.qmax
         self.textCtrlQmax.SetValue(str(val))
-        print "self.configuration.qmmax in panel.py"
+        print "self.configuration.qmax in panel.py"
         print self.configuration.qmax
 
         # Set qmin
         # here is when user load new data, it automatically set the panel qmin value.
         # only work for the first time load new data.
-        # val = self.configuration.qmin
-        # self.textCtrlQmin.SetValue(str(val))
+        val = self.configuration.qmin
+        self.textCtrlQmin.SetValue(str(val))
+        print "self.configuration.qmin"
+        print self.configuration.qmin
 
         # Set the data step
         val = self.configuration.getObsSampling()
@@ -351,11 +355,11 @@ class DataSetConfigurePanel(wx.Panel, PDFPanel):
             self.mainFrame.needsSave()
 
         # Set the value of qmin
-        # val = self.__coerseText(self.textCtrlQmin.GetValue())
-        # oldqmin = self.configuration.qmin
-        # if oldqmin != val:
-        #     self.configuration.qmin = val
-        #     self.mainFrame.needsSave()
+        val = self.__coerseText(self.textCtrlQmin.GetValue())
+        oldqmin = self.configuration.qmin
+        if oldqmin != val:
+            self.configuration.qmin = val
+            self.mainFrame.needsSave()
 
         # Set the configured value
         if oldsampling != sampling or (sampling == "custom" and oldstep !=
