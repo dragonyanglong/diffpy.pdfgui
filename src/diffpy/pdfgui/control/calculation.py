@@ -172,7 +172,7 @@ class Calculation(PDFComponent):
         pc.rmin = self.rmin
         pc.rmax = self.rmax
         pc.rstep = self.rstep
-        pc.scale = self.dscale 
+        pc.scale = self.dscale
 
         print "pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale"
         print pc.qmax, pc.qmin, pc.qdamp, pc.qbroad, pc.rmin, pc.rmax, pc.rstep, pc.scale
@@ -181,10 +181,27 @@ class Calculation(PDFComponent):
         print "self.owner.strucs"
         ##long
 
+        pscale_list = []
+        for struc in self.owner.strucs:
+            pscale_list.append(struc.getvar('pscale'))
+        print("pscale_list")
+        print(pscale_list)
 
-        # load structure and disable metadata using the nometa function 
+        # load structure and disable metadata using the nometa function
         # and set any calculator attributes as needed as above
-        r1, g1 = pc(nometa(self.owner.strucs[0]))
+        r_list = []
+        g_list = []
+        for i in range(len(pscale_list)):
+            r, g = pc(nometa(self.owner.strucs[i]))
+            g = g * pscale_list[i]
+            r_list.append(r)
+            g_list.append(g)
+        print("len(r_list)", len(r_list))
+        print("len(g_list)", len(g_list))
+        # r0, g0 = pc(nometa(self.owner.strucs[0]))
+        # g0 = g0 * pscale_list[0]
+        # r1, g1 = pc(nometa(self.owner.strucs[1]))
+        # g1 = g1 * pscale_list[1]
 
         self.owner.applyParameters()
 
@@ -221,12 +238,16 @@ class Calculation(PDFComponent):
                 server.fixpar(index)
 
         # all ready here
-        server.calc()
+        # server.calc()
 
         # get results
         #long
-        self.rcalc = r1.tolist()
-        self.Gcalc = g1.tolist()
+        self.rcalc = r_list[0].tolist() # r0, r1, r2 are the same, so just use r0
+        # print self.rcalc
+        gcalc = 0
+        for i in range(len(pscale_list)):
+            gcalc += g_list[i]
+        self.Gcalc = gcalc.tolist()
         #long
 
 
