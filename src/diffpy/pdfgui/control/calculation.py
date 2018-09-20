@@ -181,11 +181,11 @@ class Calculation(PDFComponent):
         print "self.owner.strucs"
         ##long
 
+        self.owner.applyParameters()
+
         pscale_list = []
         for struc in self.owner.strucs:
             pscale_list.append(struc.getvar('pscale'))
-        print("pscale_list")
-        print(pscale_list)
 
         # load structure and disable metadata using the nometa function
         # and set any calculator attributes as needed as above
@@ -203,7 +203,6 @@ class Calculation(PDFComponent):
         # r1, g1 = pc(nometa(self.owner.strucs[1]))
         # g1 = g1 * pscale_list[1]
 
-        self.owner.applyParameters()
 
         # structure needs to be read before dataset allocation
         for struc in self.owner.strucs:
