@@ -159,6 +159,17 @@ class Calculation(PDFComponent):
         from diffpy.srreal.pdfcalculator import PDFCalculator, DebyePDFCalculator
         from diffpy.srreal.structureadapter import nometa
 
+        # # structure needs to be read before dataset allocation
+        # for struc in self.owner.strucs:
+        #     for key,var in struc.constraints.items():
+        #         print("for key,var in struc.constraints.items():")
+        #         print "key", key
+        #         print "var", var
+        #         key_ascii = key.encode('ascii')
+        #         formula_ascii = var.formula.encode('ascii')
+        #         # server.constrain(key.encode('ascii'), var.formula.encode('ascii'))
+        #         # var.formula.encode()
+
         ## loadStructure need improvement
         ##    
         if self.pctype == 'PC': # use PDFCalculator
@@ -179,21 +190,31 @@ class Calculation(PDFComponent):
 
         print self.owner.strucs
         print "self.owner.strucs"
+        print(self.owner.parameters.items())
+
+        for struc in self.owner.strucs:
+            print(struc.getvar('pscale'), struc.getvar('delta1'), struc.getvar('spdiameter'))
         ##long
 
         self.owner.applyParameters()
-
-        pscale_list = []
-        for struc in self.owner.strucs:
-            pscale_list.append(struc.getvar('pscale'))
 
         # load structure and disable metadata using the nometa function
         # and set any calculator attributes as needed as above
         r_list = []
         g_list = []
-        for i in range(len(pscale_list)):
-            r, g = pc(nometa(self.owner.strucs[i]))
-            g = g * pscale_list[i]
+        for struc in self.owner.strucs:
+            #pc is for one calculation. the common setting
+            #pc_temp is for each phase, specific setting
+            pc_temp = pc.copy()
+            pc_temp.delta1 = struc.getvar('delta1')
+            pc_temp.delta2 = struc.getvar('delta2')
+            pc_temp.addEnvelope('sphericalshape')
+            pc_temp.spdiameter = struc.getvar('spdiameter')
+            pc_temp.addEnvelope('stepcut')
+            pc_temp.stepcut = struc.getvar('stepcut')
+
+            r, g = pc_temp(nometa(struc))
+            g = g * struc.getvar('pscale')
             r_list.append(r)
             g_list.append(g)
         print("len(r_list)", len(r_list))
@@ -243,10 +264,11 @@ class Calculation(PDFComponent):
         #long
         self.rcalc = r_list[0].tolist() # r0, r1, r2 are the same, so just use r0
         # print self.rcalc
-        gcalc = 0
-        for i in range(len(pscale_list)):
-            gcalc += g_list[i]
-        self.Gcalc = gcalc.tolist()
+        # sum up multi-phase PDFs
+        gsum = 0
+        for i in range(len(self.owner.strucs)):
+            gsum += g_list[i]
+        self.Gcalc = gsum.tolist()
         #long
 
 
