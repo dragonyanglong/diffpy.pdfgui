@@ -213,6 +213,10 @@ class Calculation(PDFComponent):
             pc_temp.addEnvelope('stepcut')
             pc_temp.stepcut = struc.getvar('stepcut')
 
+            ##TODO: pair mask. the baseline is not correct with PDFFIT.
+            pc_temp = struc.applyCMIPairSelection(pc_temp)
+            # pc_temp.setTypeMask("Ni","O",True)
+
             r, g = pc_temp(nometa(struc))
             g = g * struc.getvar('pscale')
             r_list.append(r)
